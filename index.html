@@ -324,7 +324,7 @@ main{max-width:980px;margin:0 auto;padding:40px 24px 80px;}
 const SUPABASE_URL = 'https://zdjbauujitbholsbdtts.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_qnMdUTrouVjUry2nbQw39g_I32sWLA7';
 const GEMINI_KEY   = 'AIzaSyC2gE7eAMEhqrzxPlscKDkizedvwieDIbc';
-const GEMINI_URL   = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`;
+const GEMINI_URL   = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_KEY}`;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -427,7 +427,10 @@ async function analyze() {
         generationConfig: { temperature: 0.2, maxOutputTokens: 4000 }
       })
     });
-    if (!res.ok) throw new Error(`Gemini API 錯誤 ${res.status}`);
+    if (!res.ok) {
+    const errData = await res.json().catch(()=>({}));
+    throw new Error(`Gemini API 錯誤 ${res.status}: ${errData?.error?.message||''}`);
+  }
     const data = await res.json();
     let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     raw = raw.replace(/```json|```/g, '').trim();
