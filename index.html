@@ -2,11 +2,8 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>英文長句解析器 v7</title>
+<title>英文長句解析器 v9</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Noto+Serif+TC:wght@300;400;600&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -324,9 +321,10 @@ main{max-width:980px;margin:0 auto;padding:40px 24px 80px;}
 
 <script>
 // ── Config ──
-const SUPABASE_URL  = 'https://zdjbauujitbholsbdtts.supabase.co';
-const SUPABASE_KEY  = 'sb_publishable_qnMdUTrouVjUry2nbQw39g_I32sWLA7';
-const WORKER_URL    = 'https://claude-proxy.andy-cheng-1ad.workers.dev';
+const SUPABASE_URL = 'https://zdjbauujitbholsbdtts.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_qnMdUTrouVjUry2nbQw39g_I32sWLA7';
+
+const WORKER_URL = 'https://claude-proxy.andy-cheng-1ad.workers.dev';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -343,13 +341,11 @@ let searchKeyword = '';
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('sentenceInput');
-  const updateCount = () => {
-    document.getElementById('charCount').textContent = inp.value.length;
-  };
-  inp.addEventListener('input', updateCount);
-  inp.addEventListener('paste', () => setTimeout(updateCount, 50));
-  inp.addEventListener('keyup', updateCount);
+  const _t = document.getElementById('sentenceInput');
+  const _u = () => { document.getElementById('charCount').textContent = _t.value.length; };
+  _t.addEventListener('input', _u);
+  _t.addEventListener('keyup', _u);
+  _t.addEventListener('paste', () => setTimeout(_u, 50));
 });
 
 function loadExample(i) {
@@ -383,10 +379,8 @@ function toggleStep(btn) {
 
 // ── Analyze ──
 async function analyze() {
-  const sentInput = document.getElementById('sentenceInput');
-  const sentence = sentInput.value.trim();
-  if (!sentence) { alert('請先輸入英文句子'); return; }
-  if (sentence.split(' ').length < 5) { alert('請輸入較長的句子（建議 15 個單字以上）'); return; }
+  const sentence = document.getElementById('sentenceInput').value.trim();
+  if (!sentence) { alert('請先輸入英文句子'); document.getElementById('sentenceInput').focus(); return; }
 
   setLoading(true);
   hide('emptyState'); hide('result'); hide('errorBox');
@@ -423,36 +417,20 @@ async function analyze() {
 4. 分隔符用 {"text":"|","isSep":true,"colorClass":"","label":"","isNew":false}
 5. vocabulary 列8-14個B1以上重要單字
 6. 每step的notes要有1-3條中文說明
-7. colorClass 只能用：cs cvt co cadv cbc cal cprep cdet
-8. 所有字串值不可包含換行符號或特殊控制字元
-9. 回傳純 JSON，第一個字元必須是 {，最後一個字元必須是 }\`;
+7. colorClass 只能用：cs cvt co cadv cbc cal cprep cdet`;
 
   try {
     const res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 4000, messages: [{ role: 'user', content: prompt }] })
     });
-    if (!res.ok) {
-      const errData = await res.json().catch(()=>({}));
-      throw new Error(`API 錯誤 ${res.status}: ${errData?.error?.message||JSON.stringify(errData)}`);
-    }
+    if (!res.ok) { const ed = await res.json().catch(()=>({})); throw new Error(`API錯誤 ${res.status}: ${JSON.stringify(ed)}`); }
     const data = await res.json();
     let raw = data.content?.[0]?.text || '';
-    // Clean up common JSON issues
     raw = raw.replace(/```json|```/g, '').trim();
-    // Find the first { and last } to extract pure JSON
-    const firstBrace = raw.indexOf('{');
-    const lastBrace = raw.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1) {
-      raw = raw.substring(firstBrace, lastBrace + 1);
-    }
-    // Remove any control characters
-    raw = raw.replace(/[ -]/g, m => m === '\n' || m === '\r' || m === '\t' ? m : ' ');
+    const si = raw.indexOf('{'), ei = raw.lastIndexOf('}');
+    if (si !== -1 && ei !== -1) raw = raw.substring(si, ei + 1);
     const parsed = JSON.parse(raw);
     currentAnalysis = parsed;
     renderResult(parsed);
