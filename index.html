@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>英文長句解析器 v4</title>
+<title>英文長句解析器 v5</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Noto+Serif+TC:wght@300;400;600&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -324,10 +324,9 @@ main{max-width:980px;margin:0 auto;padding:40px 24px 80px;}
 
 <script>
 // ── Config ──
-const SUPABASE_URL = 'https://zdjbauujitbholsbdtts.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_qnMdUTrouVjUry2nbQw39g_I32sWLA7';
-const GEMINI_KEY   = 'AIzaSyC2gE7eAMEhqrzxPlscKDkizedvwieDIbc';
-const GEMINI_URL   = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+const SUPABASE_URL  = 'https://zdjbauujitbholsbdtts.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_qnMdUTrouVjUry2nbQw39g_I32sWLA7';
+const WORKER_URL    = 'https://claude-proxy.andy-cheng-1ad.workers.dev';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -422,20 +421,21 @@ async function analyze() {
 7. colorClass 只能用：cs cvt co cadv cbc cal cprep cdet`;
 
   try {
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 4000 }
+        model: 'claude-haiku-4-5',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: prompt }]
       })
     });
     if (!res.ok) {
-    const errData = await res.json().catch(()=>({}));
-    throw new Error(`Gemini API 錯誤 ${res.status}: ${errData?.error?.message||''}`);
-  }
+      const errData = await res.json().catch(()=>({}));
+      throw new Error(`API 錯誤 ${res.status}: ${errData?.error?.message||JSON.stringify(errData)}`);
+    }
     const data = await res.json();
-    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let raw = data.content?.[0]?.text || '';
     raw = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(raw);
     currentAnalysis = parsed;
