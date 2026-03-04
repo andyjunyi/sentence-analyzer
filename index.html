@@ -248,8 +248,8 @@ main{max-width:980px;margin:0 auto;padding:40px 24px 80px;}
 <body>
 
 <nav>
-  <span class="nav-logo" onclick="showPage('analyze')">長句解析器</span>
-  <span class="nav-sub">Sentence Analyzer</span>
+  <span class="nav-logo" onclick="showPage('analyze')">文法解析器</span>
+  <span class="nav-sub">Grammar Analyzer</span>
   <div class="nav-tabs">
     <button class="nav-tab active" id="tab-analyze" onclick="showPage('analyze')">✏️ 解析句子</button>
     <button class="nav-tab" id="tab-browse" onclick="showPage('browse')">📚 句庫瀏覽</button>
@@ -398,6 +398,8 @@ let currentAnalysis = null;
 let currentSentence = '';
 let sortMode = 'newest';
 let searchKeyword = '';
+let lastAnalysisTime = 0;
+const ANALYZE_COOLDOWN = 10000; // 10 seconds
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -441,6 +443,14 @@ function toggleStep(btn) {
 async function analyze() {
   const sentence = document.getElementById('sentenceInput').value.trim();
   if (!sentence) { alert('請先輸入英文句子'); document.getElementById('sentenceInput').focus(); return; }
+
+  const now = Date.now();
+  if (now - lastAnalysisTime < ANALYZE_COOLDOWN) {
+    const wait = Math.ceil((ANALYZE_COOLDOWN - (now - lastAnalysisTime)) / 1000);
+    alert(`請稍候 ${wait} 秒後再次解析`);
+    return;
+  }
+  lastAnalysisTime = now;
 
   setLoading(true);
   hide('emptyState'); hide('result'); hide('errorBox');
